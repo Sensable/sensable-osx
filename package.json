@@ -1,0 +1,21 @@
+{
+  "name": "sensable-osx",
+  "version": "1.0.0",
+  "description": "A sensable reporter for OSX",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "sensable",
+    "osx"
+  ],
+  "author": "Massimiliano Marcon <me@marcon.me> (http://marcon.me)",
+  "license": "MIT",
+  "dependencies": {
+    "keyring": "^1.0.1",
+    "request": "^2.42.0",
+    "sensable-reporter": "^0.1.4",
+    "smc": "^1.0.2"
+  }
+}
