@@ -1,7 +1,7 @@
 var keyring = require('keyring'),
     smc = require('smc'),
-    sensableReporter = require('sensable-reporter'),
-    request = require('request');
+    request = require('request'),
+    reporter = require('./lib/reporter');
 
 var keyringApi = keyring.instance().load(),
     sensableToken = keyringApi.retrieve('sensable.osx.token'),
@@ -29,33 +29,30 @@ if(!sensableUser) {
     throw new Error(errorMsg);
 }
 
+var ids = {
+    temperature: sensableUser + '_osx_cpu_temperature',
+    fan: sensableUser + '_osx_fan_{FAN_NUMBER}_speed'
+};
+
 //Determine computer location by IP
 request.get({url: 'http://ipinfo.io/json', json: true}, function(e, r, response) {
     var location = response.loc.split(',').map(function(s){return +s;});
+    location = {
+        latitude: location[0],
+        longitude: location[1]
+    };
 
     console.log('Reporter running in', response.city, 'at', response.loc);
+    var numberOfFans = smc.fans(), f;
+    console.log('Detected', numberOfFans, 'fans');
+    var temperatureReporter = new reporter.Temperature(ids.temperature, location, sensableToken),
+        fanReporters = [];
+    for (f = 0; f < numberOfFans; f++) {
+        fanReporters.push(new reporter.Fan(ids.fan.replace('{FAN_NUMBER}', f), location, f, sensableToken));
+    }
 
-    var temperatureReporter = sensableReporter({
-        sensorid: sensableUser + '.osx.cputemperature',
-        unit: '°c',
-        sensortype: 'temperature',
-        latitude: location[0],
-        longitude: location[1],
-        name: 'cpu temperature for ' + sensableUser
-    }, {
-        accessToken: sensableToken,
-        private: false
-    });
-
-    var temperature = smc.temperature();
-
-    console.log('Reporting temperature of', temperature, '°c');
-
-    temperatureReporter.upload(temperature, (+new Date()), function(err) {
-        if(err) {
-            console.log('Something went wrong', err);
-        } else {
-            console.log('Temperature reported successfully');
-        }
+    temperatureReporter.report();
+    fanReporters.forEach(function(r){
+        r.report();
     });
 });
